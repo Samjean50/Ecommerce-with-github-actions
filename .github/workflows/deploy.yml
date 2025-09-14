@@ -1,13 +1,72 @@
-name: Deploy to AWS
+name: Ecommerce CI/CD
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
+  pull_request:
+    branches: [main]
 
 jobs:
-  deploy-backend:
+  backend-test:
+    name: Backend Tests
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+        cache: 'npm'
+        cache-dependency-path: api/package-lock.json  # Make sure this file exists
+        
+    - name: Verify package-lock.json exists
+      run: ls -la api/package-lock.json || echo "package-lock.json not found"
+      
+    - name: Install backend dependencies
+      run: npm ci
+      working-directory: api
+      
+    - name: Run backend tests
+      run: npm test
+      working-directory: api
+
+  frontend-test:
+    name: Frontend Tests
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+        cache: 'npm'
+        cache-dependency-path: webapp/package-lock.json  # Make sure this file exists
+        
+    - name: Verify package-lock.json exists
+      run: ls -la webapp/package-lock.json || echo "package-lock.json not found"
+        
+    - name: Install frontend dependencies
+      run: npm ci
+      working-directory: webapp
+      
+    - name: Run frontend tests
+      run: npm test -- --coverage --watchAll=false
+      working-directory: webapp
+      
+    - name: Build frontend application
+      run: npm run build
+      working-directory: webapp
+
+  deploy:
+    name: Deploy to Production
     runs-on: ubuntu-latest
     environment: production
+    needs: [backend-test, frontend-test]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     
     steps:
     - uses: actions/checkout@v3
@@ -25,14 +84,6 @@ jobs:
       
     - name: Build, tag, and push backend image
       run: |
-        docker build -t backend:latest ./ecommerce-platform/api
+        docker build -t backend:latest ./api
         docker tag backend:latest ${{ secrets.ECR_REGISTRY }}/backend:latest
         docker push ${{ secrets.ECR_REGISTRY }}/backend:latest
-
-    - name: Cache node modules
-      uses: actions/cache@v3
-      with:
-        path: api/node_modules
-        key: ${{ runner.os }}-node-${{ hashFiles('api/package-lock.json') }}
-
-        ## Adding changes
