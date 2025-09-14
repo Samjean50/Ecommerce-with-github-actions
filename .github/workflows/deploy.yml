@@ -25,7 +25,7 @@ jobs:
       
     - name: Build, tag, and push backend image
       run: |
-        docker build -t backend:latest ./api
+        docker build -t backend:latest ./ecommerce-platform/api
         docker tag backend:latest ${{ secrets.ECR_REGISTRY }}/backend:latest
         docker push ${{ secrets.ECR_REGISTRY }}/backend:latest
 
