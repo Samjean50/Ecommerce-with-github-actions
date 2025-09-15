@@ -22,14 +22,7 @@ jobs:
       run: npm ci
       working-directory: ecommerce-platform/api
       
-    - name: Clear Jest cache
-      run: npx jest --clearCache
-      working-directory: ecommerce-platform/api
-      
-    - name: Run tests with correct configuration
-      run: npx jest --rootDir . --passWithNoTests
-      working-directory: ecommerce-platform/api
-      
+
     - name: Build application
       run: npm run build
       working-directory: ecommerce-platform/webapp

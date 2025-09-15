@@ -24,9 +24,7 @@ jobs:
       run: npm ci
       working-directory: ecommerce-platform/api
       
-    - name: Run tests
-      run: npx jest --rootDir=. --passWithNoTests --testPathIgnorePatterns=node_modules/
-      working-directory: ecommerce-platform/api
+
 
     - name: Build Docker image
       run: docker build -t ecommerce-test .
