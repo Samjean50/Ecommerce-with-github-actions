@@ -19,9 +19,13 @@ jobs:
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         aws-region: us-east-1
         
-    - name: Create ECR repository
+    - name: Login to Amazon ECR
+      id: login-ecr
+      uses: aws-actions/amazon-ecr-login@v1
+      
+    - name: Ensure ECR repository exists
       run: |
-        # Check if repository exists, create if it doesn't
+        # Check if repository exists, create if not
         if ! aws ecr describe-repositories --repository-names backend --region us-east-1 > /dev/null 2>&1; then
           echo "Creating ECR repository: backend"
           aws ecr create-repository --repository-name backend --region us-east-1
@@ -29,10 +33,6 @@ jobs:
           echo "ECR repository already exists: backend"
         fi
         
-    - name: Login to Amazon ECR
-      id: login-ecr
-      uses: aws-actions/amazon-ecr-login@v1
-      
     - name: Build Docker image
       run: docker build -t backend:latest ./ecommerce-platform/api
       
@@ -42,6 +42,5 @@ jobs:
     - name: Push Docker image
       run: docker push ${{ steps.login-ecr.outputs.registry }}/backend:latest
 
-    - name: Verify image was pushed
-      run: |
-        aws ecr describe-images --repository-name backend --region us-east-1
+    - name: Verify deployment
+      run: aws ecr describe-images --repository-name backend --region us-east-1
