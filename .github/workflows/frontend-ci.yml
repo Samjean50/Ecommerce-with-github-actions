@@ -17,23 +17,15 @@ jobs:
       uses: actions/setup-node@v3
       with:
         node-version: '18'
-        cache: 'npm'
-        cache-dependency-path: ecommerce-platform/webapp/package-lock.json  # Updated path
         
     - name: Install dependencies
       run: npm ci
-      working-directory: ecommerce-platform/webapp  # Updated path
+      working-directory: ecommerce-platform/webapp
       
     - name: Run tests
       run: npm test -- --coverage --watchAll=false
-      working-directory: ecommerce-platform/webapp  # Updated path
+      working-directory: ecommerce-platform/webapp
       
     - name: Build application
       run: npm run build
-      working-directory: ecommerce-platform/webapp  # Updated path
-
-    - name: Cache node modules
-      uses: actions/cache@v3
-      with:
-        path: ecommerce-platform/webapp/node_modules  # Updated path
-        key: ${{ runner.os }}-node-${{ hashFiles('ecommerce-platform/webapp/package-lock.json') }}  # Updated path
+      working-directory: ecommerce-platform/webapp
