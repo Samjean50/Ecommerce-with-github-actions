@@ -19,18 +19,30 @@ jobs:
         node-version: '18'
         cache: 'npm'
         cache-dependency-path: ecommerce-platform/api/package-lock.json
-        
     - name: Install dependencies
-      run: |
-        npm ci
-        npx jest --clearCache
+      run: npm ci
       working-directory: ecommerce-platform/api
       
-#    - name: Run tests
-#      run: npm test -- --passWithNoTests --testPathIgnorePatterns=/node_modules/
-#      working-directory: ecommerce-platform/api
-#      # Or use: npx jest --passWithNoTests
-
+    - name: Clear Jest cache
+      run: npx jest --clearCache
+      working-directory: ecommerce-platform/api
+      
+    - name: Run tests with correct configuration
+      run: npx jest --rootDir . --passWithNoTests
+      working-directory: ecommerce-platform/api    
+      
     - name: Build Docker image
       run: docker build -t ecommerce-${{ github.event.repository.name }}-${{ job.name }} .
+      working-directory: ecommerce-platform/api
+
+    - name: Install dependencies
+      run: npm ci
+      working-directory: ecommerce-platform/api
+    
+    - name: Clear Jest cache
+      run: npx jest --clearCache
+      working-directory: ecommerce-platform/api
+    
+    - name: Run tests with correct configuration
+      run: npx jest --rootDir . --passWithNoTests
       working-directory: ecommerce-platform/api
