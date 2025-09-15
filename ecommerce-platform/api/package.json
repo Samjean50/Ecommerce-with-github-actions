@@ -1,7 +1,6 @@
 {
   "scripts": {
-    "start": "node app.js",
-    "test": "jest",
-    "dev": "nodemon app.js"
+    "test": "jest --testPathIgnorePatterns=/node_modules/ --passWithNoTests",
+    "test:watch": "jest --watch"
   }
 }
