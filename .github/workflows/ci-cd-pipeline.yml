@@ -1,0 +1,224 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '16'
+
+      # Backend install and cache
+      - name: Install backend dependencies
+        working-directory: ./server
+        run: npm install
+
+      - name: cache node modules
+        uses: actions/cache@v3
+        with:
+          path: server/node_modules
+          key: ${{ runner.os }}-node-${{ hashFiles('**/server/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
+
+      - name: Run backend tests
+        working-directory: ./server
+        run: npm test
+
+      # Frontend
+      - name: Install frontend dependencies
+        working-directory: ./public
+        run: npm install
+
+        
+
+      - name: Build frontend
+        working-directory: ./public
+        run: npm run build
+
+      
+
+
+
+      # Docker
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Build and push Backend image
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          file: ./server/Dockerfile
+          push: true
+          tags: Samjean50/ecommerce-app-backend:latest
+
+      - name: Build and push Frontend image
+        uses: docker/build-push-action@v4
+        with:
+          context: ./public
+          file: ./public/Dockerfile
+          push: true
+          tags: Samjean50/ecommerce-app-frontend:latest
+
+
+
+# Deployment to EC2
+  deploy-to-ec2:
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Setup SSH Key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/ec2_key
+          chmod 600 ~/.ssh/ec2_key
+          
+
+          
+
+      # Docker Installation
+      
+      - name: Install Docker on EC2
+        uses: appleboy/ssh-action@v0.1.10
+        env:
+          SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
+        with:
+          host: ${{ secrets.EC2_IP_ADDRESS }}
+          username: ubuntu
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            set -e
+            echo "=== Setting up Docker ==="
+            if ! command -v docker &> /dev/null; then
+              sudo apt-get update -qq
+              sudo apt-get install -y docker.io
+              sudo systemctl enable --now docker
+            fi
+            
+            if ! command -v docker-compose &> /dev/null; then
+              sudo curl -fsSL "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+              sudo chmod +x /usr/local/bin/docker-compose
+            fi
+            
+            sudo usermod -aG docker ubuntu
+            docker --version
+            docker-compose --version
+
+     
+
+
+      - name: Create and deploy compose file
+        uses: appleboy/ssh-action@v0.1.10
+        with:
+         host: ${{ secrets.EC2_IP_ADDRESS }}
+         username: ubuntu
+         key: ${{ secrets.EC2_SSH_KEY }}
+         script: |
+          cat << 'EOF' > /home/ubuntu/docker-compose.yml
+          version: '3.8'
+          
+          services:
+            backend:
+              image: Samjean50/ecommerce-app-backend:latest
+              container_name: ecommerce-backend
+              ports:
+                - "5000:5000"
+              environment:
+                - NODE_ENV=production
+                - PORT=5000
+              restart: unless-stopped
+              networks:
+                - ecommerce-net
+          
+            frontend:
+              image: Samjean50/ecommerce-app-frontend:latest
+              container_name: ecommerce-frontend
+              ports:
+                - "80:3000"
+              environment:
+                - REACT_APP_API_URL=http://backend:5000
+              depends_on:
+                - backend
+              restart: unless-stopped
+              networks:
+                - ecommerce-net
+          
+          networks:
+            ecommerce-net:
+              driver: bridge
+          EOF
+          
+          echo "Docker Compose file created successfully at /home/ubuntu/docker-compose.yml"
+
+
+
+          
+
+    # File Verification
+      - name: Verify Deployment Files
+        uses: appleboy/ssh-action@v0.1.10
+        with:
+         host: ${{ secrets.EC2_IP_ADDRESS }}
+         username: ubuntu
+         key: ${{ secrets.EC2_SSH_KEY }}
+         script: |
+          echo "=== Deployment Files ==="
+          ls -la /home/ubuntu/
+          echo "=== Compose File Contents ==="
+          cat /home/ubuntu/docker-compose.yml || echo "ERROR: File missing!"
+
+
+    # Deployment
+      - name: Deploy Containers
+        uses: appleboy/ssh-action@v0.1.10
+        with:
+          host: ${{ secrets.EC2_IP_ADDRESS }}
+          username: ubuntu
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            set -ex
+            echo "=== Starting Deployment ==="
+            cd /home/ubuntu
+            
+            # Stop and clean up old containers
+            docker-compose down || true
+            docker system prune -af  # Cleanup unused images
+            docker pull chykmanish/ecommerce-app-backend:latest
+            docker pull chykmanish/ecommerce-app-frontend:latest
+            docker-compose up -d --force-recreate
+            echo "=== Running Containers ==="
+            docker ps -a
+            echo "=== Network Status ==="
+            docker network ls
+
+
+
+      - name: Send WhatsApp Alert
+        if: success()
+        run: |
+          EC2_IP=${{ secrets.EC2_IP_ADDRESS }}
+          PHONE=${{ secrets.WHATSAPP_PHONE }}
+          MESSAGE="✅ Deployment Successful! Access your app at: http://$EC2_IP"
+          
+          curl -X POST \
+            "https://api.callmebot.com/whatsapp.php?phone=${{ secrets.WHATSAPP_PHONE }}&text=✅%20Deployment%20Success!%20Access%20your%20app%20at%20http://${{ secrets.EC2_IP_ADDRESS }}" \
+            -H "Cache-Control: no-cache"
+
+
+
+
+    
