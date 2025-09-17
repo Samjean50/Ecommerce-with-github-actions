@@ -331,18 +331,17 @@ This Capstone Project offers hands-on experience in building and deploying a rea
 It demonstrates the end-to-end DevOps lifecycle, making it ideal for developers and DevOps engineers looking to master modern deployment pipelines.
 
 ## 📖 Additional Resources
-Node.js Documentation
+[Node.js Documentation](|https://devdocs.io/node/)
 
-React Documentation
+[React Documentation](https://devdocs.io/react/)
 
-Docker Documentation
+[Docker Documentation](https://docs.docker.com/)
 
-GitHub Actions Docs
+[GitHub Actions Docs](https://docs.github.com/en/actions)
 
 Cloud Platform Guides:
 
-AWS
-Azure
-Google Cloud
+[AWS](https://docs.aws.amazon.com/)
+[Google Cloud](https://cloud.google.com/docs/)
 
 ⚠️ Note: Customize EC2 IP and secrets in your workflow before using this project in production.
