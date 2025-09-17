@@ -30,20 +30,42 @@ The main goal is to ensure continuous integration and continuous delivery using 
   * Order processing
 * Add unit tests using Jest or Mocha.
 
+```
+name: Backend CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+        cache: 'npm'
+        cache-dependency-path: ecommerce-platform/api/package-lock.json
+        
+    - name: Install dependencies
+      run: npm ci
+      working-directory: ecommerce-platform/api
+      
+
+
+    - name: Build Docker image
+      run: docker build -t ecommerce-test .
+      working-directory: ecommerce-platform/api
+```
 
 ![ecommerce](images/2.png)
-
-
-Initialize node js application
-
-
-
-Install express
-
-
-
-Implement unit tests for the api
-
+![ecommerce](images/node.js.png)
 
 
 ## Task 4:  Frontend Web Application Setup
@@ -57,13 +79,39 @@ Implement unit tests for the api
   * User login
   * Order placement
 
-Create simple web application
+```
+name: Frontend CI
 
-npx create-react-app .
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
 
-npm install axios image
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+        
+    - name: Install dependencies
+      run: npm ci
+      working-directory: ecommerce-platform/api
+      
 
-Both folders have been setup
+    - name: Build application
+      run: npm run build
+      working-directory: ecommerce-platform/webapp
+
+```
+
+    
 ![ecommerce](images/3.png)
 
 ## Task 5: Continous integration Workflow
@@ -121,7 +169,6 @@ Workflow that installs dependencies, runs tests and builds the application
 ### Task 6: Docker integration
 Create Dockerfiles in both api/ and webapp/ directories.
 
-image
 * Modify your workflow to build docker the images
 
 # Dockerisation
@@ -140,7 +187,7 @@ image
     context: .
     file: ./server/Dockerfile
     push: true
-    tags: chykmanish/ecommerce-app-backend:latest
+    tags: Samjean50/ecommerce-app-backend:latest
 
 - name: Build and push Frontend image
   uses: docker/build-push-action@v4
@@ -148,8 +195,8 @@ image
     context: ./public
     file: ./public/Dockerfile
     push: true
-    tags: chykmanish/ecommerce-app-frontend:latest
-
+    tags: Samjean50/ecommerce-app-frontend:latest
+![ecommerce](images/docker.png)
 ## Task 7: Deploy to the Cloud
 * Choose AWS as the cloud provider.
 * Set up an EC2 instance to host the backend.

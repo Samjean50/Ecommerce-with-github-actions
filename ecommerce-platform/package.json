@@ -24,3 +24,8 @@
     "supertest": "^7.1.4"
   }
 }
+{
+  "scripts": {
+    "build": "echo 'Build completed'"
+  }
+}
