@@ -218,8 +218,8 @@ Choose a Cloud platform image
         # Stop and clean up old containers
         docker-compose down || true
         docker system prune -af  # Cleanup unused images
-        docker pull chykmanish/ecommerce-app-backend:latest
-        docker pull chykmanish/ecommerce-app-frontend:latest
+        docker pull Samjean50/ecommerce-app-backend:latest
+        docker pull Samjean50/ecommerce-app-frontend:latest
         docker-compose up -d --force-recreate
         echo "=== Running Containers ==="
         docker ps -a
